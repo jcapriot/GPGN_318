@@ -7,16 +7,9 @@ dependencies:
 - SimPEG=0.20.0
 - discretize=0.9.0
 - geoana=0.5.0
-- sympy=1.12
-- pandas=2.0.3
-- dask=2023.7.0
+- sympy
+- pandas
 - matplotlib
 # applications
 - jupyterlab=4.0.3
-- jupyter-collaboration=1.0.1
 - nbconvert=7.6.0
-- pip:
-  - notebook==7.0.0b3
-# CLI tools
-- pip
-- vim
