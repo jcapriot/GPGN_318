@@ -4,7 +4,9 @@
 # for GPGN-303 (Gravity, Magnetics, Electrical) GPGN-304 (Gravity & Magnetics) & GPGN-314 (Applied Geophysics)
 # Updated in Python by Andy McAliley for GPGN-304 (Gravity & Magnetics)
 # Continued updates by Gavin Wilson during GPGN-314 (Applied Geophysics)
-# Added docsrting by Joe Capriotti
+# Added docstring by Joe Capriotti
+# fix for true limits (no need to adjust small numbers) by Joe Capriotti
+# vectorized call over observations by Joe Capriotti
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,43 +53,43 @@ def gpoly(obs,nodes,density):
     """
     #Blakely, 1996
     gamma = 6.672E-03 # mGal
+    obs = np.asarray(obs)
+    nodes = np.asarray(nodes)
     numobs = len(obs)
     numnodes = len(nodes)
     grav = np.zeros(numobs)
-    for iobs in range(numobs):
-        shiftNodes = nodes - obs[iobs]
-        sum = 0
-        # loop over segments
-        for i1 in range(numnodes):
-            i2 = i1+1
-            # last node must wrap around to first node
-            i2 = np.mod(i2,numnodes)
-            x1 = shiftNodes[i1,0]
-            x2 = shiftNodes[i2,0]
-            z1 = shiftNodes[i1,1]
-            z2 = shiftNodes[i2,1]
+    
+    for i1 in range(numnodes):
+        i2 = (i1 + 1) % numnodes
+        dr1 = nodes[i1] - obs
+        dr2 = nodes[i2] - obs
+        segment = nodes[i2] - nodes[i1]
+        theta1 = np.arctan2(dr1[:, 1], dr1[:, 0])
+        theta2 = np.arctan2(dr2[:, 1], dr2[:, 0])
 
-            dx = x2 - x1
-            dz = z2 - z1
-            # avoid zero division
-            if abs(dz) < 1E-8:
-                # move on if points are identical
-                if abs(dx) < 1E-8:
-                    continue
-                dz = dz - dx*(1E-7)
-            alpha = dx/dz
-            beta = x1-alpha*z1
-            r1 = np.sqrt(x1**2+z1**2)
-            r2 = np.sqrt(x2**2+z2**2)
-            theta1 = np.arctan2(z1,x1)
-            theta2 = np.arctan2(z2,x2)
+        flat_line = segment[1] == 0
+        if flat_line:
+            grav += dr1[:, 1] * (theta2 - theta1)
+        else:
+            r1 = np.linalg.norm(dr1, axis=-1)
+            r2 = np.linalg.norm(dr2, axis=-1)
 
-            term1 = np.log(r2/r1)
-            term2 = alpha*(theta2-theta1)
-            factor = beta/(1+alpha**2)
-            sum = sum + factor*(term1-term2)
-        grav[iobs] = 2*gamma*density*sum
-    return grav
+            off_nodes = (r1 != 0) & (r2 != 0)
+            r1 = r1[off_nodes]
+            r2 = r2[off_nodes]
+            
+            alpha = segment[0]/segment[1]
+            beta = (dr1[:, 0] - alpha * dr1[:, 1])
+            
+            term1 = np.zeros_like(beta)
+            term1[off_nodes] = np.log(r2 / r1)
+            term2 = alpha * (theta1 - theta2)
+            factor = beta / (1 + alpha ** 2)
+
+            factor[~off_nodes] = 0.0
+            
+            grav += factor * (term1 - term2)
+    return 2*gamma*density*grav
 
 
 def plot_model(data, obs_locs, *polygons):
