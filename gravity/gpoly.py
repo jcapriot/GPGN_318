@@ -83,7 +83,7 @@ def gpoly(obs,nodes,density):
             
             term1 = np.zeros_like(beta)
             term1[off_nodes] = np.log(r2 / r1)
-            term2 = alpha * (theta1 - theta2)
+            term2 = alpha * (theta2 - theta1)
             factor = beta / (1 + alpha ** 2)
 
             factor[~off_nodes] = 0.0
