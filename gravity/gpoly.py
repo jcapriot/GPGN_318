@@ -92,7 +92,7 @@ def gpoly(obs,nodes,density):
     return 2*gamma*density*grav
 
 
-def plot_model(data, obs_locs, *polygons):
+def plot_model(data, obs_locs, *polygons, show_locations=True, loc_size=0.2):
     """
     Plot geophysical data and geological models with dikes.
 
@@ -104,6 +104,10 @@ def plot_model(data, obs_locs, *polygons):
         Array of observation locations.
     *polygons : variable number of arrays
         Arrays representing the dikes as polygons.
+    show_locations : bool
+        Whether to show the observation locations on the model plot
+    loc_size : float
+        Size of the observation points (if show_locations is True).
 
     Returns
     -------
@@ -145,6 +149,9 @@ def plot_model(data, obs_locs, *polygons):
     ax_model.invert_yaxis()
     ax_model.set_ylabel('Depth (m)')
     ax_model.set_xlabel('Position (m)')
+    
+    if show_locations:
+        ax_model.scatter(obs_locs[:, 0], obs_locs[:, 1], s=loc_size)
 
     ax_data.plot(obs_locs[:, 0], data)
 
