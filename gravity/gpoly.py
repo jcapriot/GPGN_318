@@ -57,7 +57,7 @@ def gpoly(obs,nodes,density):
     nodes = np.asarray(nodes)
     
     # append a value to obs to do a cursory test for CW vs CCW
-    # basically add a point outside and above the body.
+    # basically add a point outside and at a lower z-value than the body.
     # it's sign should match the sign of density.
     # This point is above the center of the object.
     
@@ -72,12 +72,17 @@ def gpoly(obs,nodes,density):
         dr1 = nodes[i1] - obs
         dr2 = nodes[i2] - obs
         segment = nodes[i2] - nodes[i1]
-        theta1 = np.arctan2(dr1[:, 1], dr1[:, 0])
-        theta2 = np.arctan2(dr2[:, 1], dr2[:, 0])
+        a = dr1[:, 1]
+        b = dr1[:, 0]
+        c = dr2[:, 1]
+        d = dr2[:, 0]
+    
+        # arctan2(dr2[:, 1], dr2[:, 0]) - arctan2(dr1[:, 1], dr1[:, 0])
+        dtheta = np.arctan2(b * c - a * d, b * d + a * c)
 
         flat_line = segment[1] == 0
         if flat_line:
-            grav += dr1[:, 1] * (theta2 - theta1)
+            grav += dr1[:, 1] * dtheta
         else:
             r1 = np.linalg.norm(dr1, axis=-1)
             r2 = np.linalg.norm(dr2, axis=-1)
@@ -91,7 +96,7 @@ def gpoly(obs,nodes,density):
             
             term1 = np.zeros_like(beta)
             term1[off_nodes] = np.log(r2 / r1)
-            term2 = alpha * (theta2 - theta1)
+            term2 = alpha * dtheta
             factor = beta / (1 + alpha ** 2)
 
             factor[~off_nodes] = 0.0
