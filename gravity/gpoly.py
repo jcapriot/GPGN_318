@@ -55,6 +55,14 @@ def gpoly(obs,nodes,density):
     gamma = 6.672E-03 # mGal
     obs = np.asarray(obs)
     nodes = np.asarray(nodes)
+    
+    # append a value to obs to do a cursory test for CW vs CCW
+    # basically add a point outside and above the body.
+    # it's sign should match the sign of density.
+    # This point is above the center of the object.
+    
+    obs = np.r_[obs, [[np.median(nodes[:, 0]), np.min(nodes[:, 1]) - 10]]]
+    
     numobs = len(obs)
     numnodes = len(nodes)
     grav = np.zeros(numobs)
@@ -89,7 +97,11 @@ def gpoly(obs,nodes,density):
             factor[~off_nodes] = 0.0
             
             grav += factor * (term1 - term2)
-    return 2*gamma*density*grav
+    grav *= 2*gamma*density
+    
+    if np.sign(grav[-1]) != np.sign(density):
+        grav *= -1
+    return grav[:-1]
 
 
 def plot_model(data, obs_locs, *polygons, show_locations=True, loc_size=0.2):
