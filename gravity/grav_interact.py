@@ -71,7 +71,7 @@ class GravInteract():
         else:
             self._data_plot = ax.errorbar(obs[:, 0], data, yerr=std, fmt="o", zorder=0)
         self._for_dat = np.zeros(obs.shape[0])
-        self._line = ax.plot(obs[:, 0], self._for_dat, zorder=1, color='C1')[0]
+        self._line = ax.plot(obs[:, 0], self._for_dat, zorder=1, color='C1', linewidth=0, marker='s')[0]
         self._tie = ax.plot(obs[0, 0], data[0], marker='s', color='C2', linewidth=0, zorder=2)[0]
         
         ax.set_ylabel(r'$g_d$ (mGal)')
@@ -113,7 +113,7 @@ class GravInteract():
         self._tie_slider = IntSlider(
             value=0,
             min=0,
-            max=obs.shape[0],
+            max=obs.shape[0]-1,
             description=r'Tie Index:',
             disabled=False,
             continuous_update=True,
