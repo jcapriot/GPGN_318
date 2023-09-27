@@ -8,10 +8,14 @@ import numpy as np
 class GravInteract():
     
     def __init__(self, obs, data, std=None, xmarks=None, zmarks=None):
-        
+
+        obs = np.asarray(obs)
+        data = np.asarray(data)
+        if std is not None:
+            std = np.asarray(std)
         self._obs = obs
         self._data = data
-        self._std = None
+        self._std = std
         
         m = Map(layers=[], center=(0, 0), crs=projections.Simple, zoom=1)
         
