@@ -7,41 +7,75 @@ import numpy as np
 
 class GravInteract():
     
-    def __init__(self, obs, data, std=None):
+    def __init__(self, obs, data, std=None, xmarks=None, zmarks=None):
         
         self._obs = obs
         self._data = data
         self._std = None
         
-        m = Map(layers=[], center=(0, 0), crs=projections.Simple, zoom=6)
+        m = Map(layers=[], center=(0, 0), crs=projections.Simple, zoom=1)
         
         grid = []
         labels = []
-        for i in np.linspace(-50, 50, 101):
-            grid.append(
-                Polyline(
-                    locations=[(i, -720), (i, 720)],
-                    color="black",
-                    weight=3 if i==0 else 1,
-                )
-            )
-            icon = DivIcon(html=str(-i), icon_size=[0, 0])
-            labels.append(
-                Marker(icon=icon, location=(i, 0), draggable=False)
-            )
+        xmin, zmin = obs.min(axis=0)
+        xmax, zmax = obs.max(axis=0)
 
-        for i in np.linspace(-50, 50, 101):
+        if xmarks is None or zmarks is None:
+            dx = xmax - xmin
+            dz = zmax - zmin
+            max_d = max(dx, dz)
+            d_mark = 10 ** (np.floor(np.log10(max_d)) - 1)
+            n_d = int(2 * (max_d // d_mark))
+            if xmarks is None:
+                center = np.round((xmin + xmax) / d_mark) * d_mark
+                start = (center - d_mark * n_d // 2)
+                end = (center + d_mark * n_d // 2)
+                xmarks = np.linspace(start, end, n_d+1)
+            if zmarks is None:
+                center = np.round((zmin + zmax) / d_mark) * d_mark
+                start = (center - d_mark * n_d // 2)
+                end = (center + d_mark * n_d // 2)
+                zmarks = np.linspace(start, end, n_d + 1)
+
+        x_center = xmarks[len(xmarks)//2]
+        zmin = zmarks.min()
+        zmax = zmarks.max()
+
+        z_center = zmarks[len(zmarks)//2]
+        xmin = xmarks.min()
+        xmax = xmarks.max()
+
+        self._xscale = (xmax - xmin) / 1000
+        self._zscale = (zmax - zmin) / 1000
+        self._xshift = x_center
+        self._zshift = z_center
+
+        for mark in xmarks:
+            local_x, _ = self._global_to_local(mark, 0)
             grid.append(
                 Polyline(
-                    locations=[(-360, i), (360, i)],
+                    locations=[(-500, local_x), (500, local_x)],
                     color="black",
-                    weight=3 if i==0 else 1,
+                    weight=3 if mark == x_center else 1,
                 )
             )
-            if i != 0:
-                icon = DivIcon(html=str(i), icon_size=[0, 0])
+            icon = DivIcon(html=str(mark), icon_size=[0, 0])
+            labels.append(
+                Marker(icon=icon, location=(0, local_x), draggable=False)
+            )
+        for mark in zmarks:
+            _, local_z = self._global_to_local(0, -mark)
+            grid.append(
+                Polyline(
+                    locations=[(local_z, -500), (local_z, 500)],
+                    color="black",
+                    weight=3 if mark == z_center else 1,
+                )
+            )
+            if mark != z_center:
+                icon = DivIcon(html=str(mark), icon_size=[0, 0])
                 labels.append(
-                    Marker(icon=icon, location=(0, i), draggable=False)
+                    Marker(icon=icon, location=(local_z, 0), draggable=False)
                 )
 
         for line in grid:
@@ -51,10 +85,10 @@ class GravInteract():
             m.add_layer(label)
             
         # observation Markers
-        for x, y in self._obs:
-            icon = AwesomeIcon(name='close')#, icon_size=[20, 20])
-            y = -y
-            marker = Marker(icon=icon, location=(y, x), draggable=False)
+        for x, z in self._obs:
+            icon = AwesomeIcon(name='close') #, icon_size=[20, 20])
+            local_x, local_z = self._global_to_local(x, -z)
+            marker = Marker(icon=icon, location=(local_z, local_x), draggable=False)
             m.add_layer(marker)
             
         draw_control = DrawControl(
@@ -93,6 +127,7 @@ class GravInteract():
         def handle_interaction(**kwargs):
             if kwargs.get('type') == 'mousemove':
                 y, x = kwargs.get('coordinates')
+                x, y = self._local_to_global(x, y)
                 lat_lon_display.value = f"x={x} , depth={-y}"
 
         m.on_interaction(handle_interaction)
@@ -136,12 +171,19 @@ class GravInteract():
 
         sliders = HBox(children = [self._density_slider, self._tie_slider], layout=Layout(width='100%'))
         self._box = VBox(children=[fig.canvas, sliders, m, lat_lon_display])
+
+    def _local_to_global(self, x, z):
+        return x * self._xscale + self._xshift, z * self._zscale + self._zshift
+
+    def _global_to_local(self, x, z):
+        return (x - self._xshift) / self._xscale , (z - self._zshift) / self._zscale
         
     def _update_raw_data(self, json_data):
         gz = np.zeros(self._obs.shape[0])
         if json_data is not None:
             for item in json_data:
                 nodes = np.asarray(item['geometry']['coordinates']).squeeze()
+                nodes = np.c_[self._local_to_global(nodes[:, 0], nodes[:, 1])]
                 nodes[:, 1] *= -1
                 gz += gpoly(self._obs, nodes, 1.0)
         self._for_dat = gz
@@ -172,6 +214,7 @@ class GravInteract():
         polys = []
         for item in data:
             xy = np.asarray(item['geometry']['coordinates'])[0]
+            xy = np.c_[self._local_to_global(xy[:, 0], xy[:, 1])]
             xy[:, 1] *= -1
             polys.append(xy[:-1])
         return polys
@@ -182,7 +225,7 @@ class GravInteract():
         state = dc.get_state()
         
         nodes = np.asarray(nodes).copy()
-        nodes[:, -1] *= -1
+        nodes = np.c_[self._global_to_local(nodes[:, 0], -nodes[:, 1])]
         nodes = np.r_[nodes, [nodes[0]]]
 
         new_poly = {
