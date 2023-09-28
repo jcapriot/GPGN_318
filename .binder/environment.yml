@@ -1,3 +1,4 @@
+name: gpgn-318
 channels:
 - conda-forge
 dependencies:
