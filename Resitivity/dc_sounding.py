@@ -18,8 +18,9 @@ import discretize
 
 class DCSoundingInteract():
     
-    def __init__(self, A, B, M, N, observed_voltage=None, standard_deviation=None, rho_0=1, n_layer=1):
+    def __init__(self, A, B, M, N, observed_voltage=None, standard_deviation=None, rho_0=1):
 
+    n_layer = 1
         def check_dims(locs):
             locs = np.atleast_1d(locs)
 
@@ -82,6 +83,8 @@ class DCSoundingInteract():
         ax_model.set_xscale('log')
         ax_model.set_yscale('log')
         ax_model.invert_yaxis()
+
+        ax_model.set_ylim([1.05 * self._model[-1, 1], 0.5 * self._model[1, 1]])
         ax_model.grid(True)
 
         ax_model.set_xlabel(r'resistivity ($\Omega$ m)')
@@ -192,8 +195,8 @@ class DCSoundingInteract():
                     new_points[:, 1] = new_y
 
                 # put some reasonable guardrails on interacting.
-                new_points = np.maximum(1E-15, new_points)
-                new_points = np.minimum(1E15, new_points)
+                # new_points = np.maximum(1E-15, new_points)
+                # new_points = np.minimum(1E15, new_points)
 
                 self._model[segment_ind:segment_ind + 2] = new_points
                 self._update_model_plot()
@@ -342,8 +345,13 @@ class DCSoundingInteract():
 
         self._model = self._rho_thick_to_model(resistivity, thicknesses)
         self._update_model_plot()
-        self._ax_model.relim()
-        self._ax_model.autoscale_view(True, True, True)
+
+        # update the axis limits
+        xlim = [0.95 * resistivity.min(), 1.05 * resistivity.max()]
+        ylim = [1.05 * self._model[-1, 1], 0.5 * self._model[1, 1]]
+
+        self._ax_model.set_xlim(xlim)
+        self._ax_model.set_ylim(ylim)
         self._update_dpred_plot()
 
     def _run_inversion(self):
