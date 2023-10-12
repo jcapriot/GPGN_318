@@ -1,6 +1,4 @@
 
-gravity/.ipynb_checkpoints/
+*.ipynb_checkpoints*
 
-gravity/__pycache__/
-
-gravity/data/.ipynb_checkpoints/
+*__pycache__*
