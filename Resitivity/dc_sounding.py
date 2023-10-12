@@ -20,7 +20,7 @@ class DCSoundingInteract():
     
     def __init__(self, A, B, M, N, observed_voltage=None, standard_deviation=None, rho_0=1):
 
-    n_layer = 1
+        n_layer = 1
         def check_dims(locs):
             locs = np.atleast_1d(locs)
 
