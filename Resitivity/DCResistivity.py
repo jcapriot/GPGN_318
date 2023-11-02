@@ -59,7 +59,7 @@ class DCRInversionApp(object):
     @property
     def JtJ(self):
         if self._JtJ is None:
-            self._JtJ = np.sqrt((self.Jmatrix ** 2).sum(axis=0)) / self.mesh.vol
+            self._JtJ = np.sqrt((self.Jmatrix ** 2).sum(axis=0)) / self.mesh.cell_volumes
         return self._JtJ
 
     @property
@@ -972,7 +972,7 @@ class DCRInversionApp(object):
                 rho_min=rho_min,
                 rho_max=rho_max,
                 doi_level=doi_level,
-                #show_grid=show_grid,
+                show_grid=show_grid,
                 show_core=show_core,
                 reverse_color=reverse_color,
                 scale=scale,
@@ -1132,7 +1132,7 @@ class DCRInversionApp(object):
                 rho_min=rho_min,
                 rho_max=rho_max,
                 aspect_ratio=aspect_ratio,
-                #show_grid=show_grid,
+                show_grid=show_grid,
                 show_core=show_core,
                 reverse_color=reverse_color
             )
