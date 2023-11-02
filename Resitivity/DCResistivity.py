@@ -123,7 +123,7 @@ class DCRInversionApp(object):
             fig, ax = plt.subplots(1,1, figsize=(10, 5))
             self.mesh.plot_image(
                 self.actind, grid=True, ax=ax,
-                gridOpts={'color':'white', 'alpha':0.5}
+                grid_opts={'color':'white', 'alpha':0.5}
             )
 
             ax.plot(self.IO.electrode_locations[:,0], self.IO.electrode_locations[:,1], 'k.')
@@ -463,8 +463,8 @@ class DCRInversionApp(object):
             ticks = np.linspace(vmin, vmax, 4)
 
         out = self.mesh.plot_image(
-            tmp, grid=show_grid, pcolorOpts={'cmap':cmap_type, 'norm':norm}, ax=ax,
-            gridOpts={"color": "white", "alpha": 0.5}
+            tmp, grid=show_grid, pcolor_opts={'cmap':cmap_type, 'norm':norm}, ax=ax,
+            grid_opts={"color": "white", "alpha": 0.5}
         )
         cb = plt.colorbar(out[0], orientation='horizontal', format="%.1f", fraction=0.06, ax=ax, ticks=ticks)
         cb.ax.minorticks_off()
@@ -505,9 +505,9 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             tmp,
             grid=show_grid,
-            pcolorOpts={"cmap": "jet",'norm':norm},
+            pcolor_opts={"cmap": "jet",'norm':norm},
             ax=ax,
-            gridOpts={"color": "white", "alpha": 0.5},
+            grid_opts={"color": "white", "alpha": 0.5},
         )
         cb = plt.colorbar(
             out[0], orientation="horizontal", fraction=0.06, ticks=ticks, format="%.1e", ax=ax
@@ -617,16 +617,16 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
-            pcolorOpts={"cmap": cmap, 'norm':norm},
+            pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax1,
-            gridOpts={"color": "white", "alpha": 0.5},
+            grid_opts={"color": "white", "alpha": 0.5},
         )
         self.mesh.plot_image(
             rho2,
             grid=show_grid,
-            pcolorOpts={"cmap": cmap, 'norm':norm},
+            pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax2,
-            gridOpts={"color": "white", "alpha": 0.5},
+            grid_opts={"color": "white", "alpha": 0.5},
         )
 
         for ii, ax in enumerate(axs):
@@ -699,9 +699,9 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             tmp,
             grid=show_grid,
-            pcolorOpts={"cmap": cmap},
+            pcolor_opts={"cmap": cmap},
             ax=ax,
-            gridOpts={"color": "white", "alpha": 0.5},
+            grid_opts={"color": "white", "alpha": 0.5},
         )
 
         tmp_contour = np.ones(self.mesh.n_cells) * np.nan
@@ -819,9 +819,9 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
-            pcolorOpts={"cmap": cmap, 'norm':norm},
+            pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax,
-            gridOpts={"color": "white", "alpha": 0.5},
+            grid_opts={"color": "white", "alpha": 0.5},
         )
         cb = plt.colorbar(out[0], orientation='horizontal', format="%.1f", fraction=0.06, ax=ax, ticks=ticks)
         cb.ax.minorticks_off()
