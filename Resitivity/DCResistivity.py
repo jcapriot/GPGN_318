@@ -690,9 +690,9 @@ class DCRInversionApp(object):
         tmp[self.actind] = doi_index
 
         if reverse_color:
-            cmap = "jet_r"
+            cmap = "viridis_r"
         else:
-            cmap = "jet"
+            cmap = "viridis"
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
@@ -972,7 +972,7 @@ class DCRInversionApp(object):
                 rho_min=rho_min,
                 rho_max=rho_max,
                 doi_level=doi_level,
-                show_grid=show_grid,
+                #show_grid=show_grid,
                 show_core=show_core,
                 reverse_color=reverse_color,
                 scale=scale,
@@ -1132,7 +1132,7 @@ class DCRInversionApp(object):
                 rho_min=rho_min,
                 rho_max=rho_max,
                 aspect_ratio=aspect_ratio,
-                show_grid=show_grid,
+                #show_grid=show_grid,
                 show_core=show_core,
                 reverse_color=reverse_color
             )
