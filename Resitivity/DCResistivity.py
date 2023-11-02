@@ -451,9 +451,9 @@ class DCRInversionApp(object):
             vmin, vmax = clim
 
         if reverse_color:
-            cmap_type = 'jet_r'
+            cmap_type = 'viridis_r'
         else:
-            cmap_type = 'jet'
+            cmap_type = 'viridis'
 
         if scale == "log":
             norm = LogNorm(vmin, vmax)
@@ -462,9 +462,14 @@ class DCRInversionApp(object):
             norm = Normalize(vmin, vmax)
             ticks = np.linspace(vmin, vmax, 4)
 
+        if show_grid:
+            grid_opts = {"color": "white", "alpha": 0.5}
+        else:
+            grid_opts = {}
+
         out = self.mesh.plot_image(
             tmp, grid=show_grid, pcolor_opts={'cmap':cmap_type, 'norm':norm}, ax=ax,
-            grid_opts={"color": "white", "alpha": 0.5}
+            grid_opts=grid_opts
         )
         cb = plt.colorbar(out[0], orientation='horizontal', format="%.1f", fraction=0.06, ax=ax, ticks=ticks)
         cb.ax.minorticks_off()
@@ -502,12 +507,17 @@ class DCRInversionApp(object):
             norm = Normalize(vmin, vmax)
             ticks = np.linspace(vmin, vmax, 4)
 
+        if show_grid:
+            grid_opts = {"color": "white", "alpha": 0.5}
+        else:
+            grid_opts = {}
+
         out = self.mesh.plot_image(
             tmp,
             grid=show_grid,
-            pcolor_opts={"cmap": "jet",'norm':norm},
+            pcolor_opts={"cmap": "viridis",'norm':norm},
             ax=ax,
-            grid_opts={"color": "white", "alpha": 0.5},
+            grid_opts=grid_opts,
         )
         cb = plt.colorbar(
             out[0], orientation="horizontal", fraction=0.06, ticks=ticks, format="%.1e", ax=ax
@@ -599,9 +609,9 @@ class DCRInversionApp(object):
         rho2[~self.actind] = np.nan
 
         if reverse_color:
-            cmap = "jet_r"
+            cmap = "viridis_r"
         else:
-            cmap = "jet"
+            cmap = "viridis"
 
         if scale == "log":
             norm = LogNorm(vmin, vmax)
@@ -614,19 +624,24 @@ class DCRInversionApp(object):
         ax1 = axs[0]
         ax2 = axs[1]
 
+        if show_grid:
+            grid_opts = {"color": "white", "alpha": 0.5}
+        else:
+            grid_opts = {}
+
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
             pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax1,
-            grid_opts={"color": "white", "alpha": 0.5},
+            grid_opts=grid_opts,
         )
         self.mesh.plot_image(
             rho2,
             grid=show_grid,
             pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax2,
-            grid_opts={"color": "white", "alpha": 0.5},
+            grid_opts=grid_opts,
         )
 
         for ii, ax in enumerate(axs):
@@ -696,12 +711,17 @@ class DCRInversionApp(object):
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
+        if show_grid:
+            grid_opts = {"color": "white", "alpha": 0.5}
+        else:
+            grid_opts = {}
+
         out = self.mesh.plot_image(
             tmp,
             grid=show_grid,
             pcolor_opts={"cmap": cmap},
             ax=ax,
-            grid_opts={"color": "white", "alpha": 0.5},
+            grid_opts=grid_opts,
         )
 
         tmp_contour = np.ones(self.mesh.n_cells) * np.nan
@@ -816,12 +836,17 @@ class DCRInversionApp(object):
             norm = Normalize(vmin, vmax)
             ticks = np.linspace(vmin, vmax, 4)
 
+        if show_grid:
+            grid_opts = {"color": "white", "alpha": 0.5}
+        else:
+            grid_opts = {}
+
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
             pcolor_opts={"cmap": cmap, 'norm':norm},
             ax=ax,
-            grid_opts={"color": "white", "alpha": 0.5},
+            grid_opts=grid_opts
         )
         cb = plt.colorbar(out[0], orientation='horizontal', format="%.1f", fraction=0.06, ax=ax, ticks=ticks)
         cb.ax.minorticks_off()
