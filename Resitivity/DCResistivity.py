@@ -463,7 +463,7 @@ class DCRInversionApp(object):
             ticks = np.linspace(vmin, vmax, 4)
 
         out = self.mesh.plot_image(
-            tmp, grid=show_grid, clim=(vmin, vmax), pcolorOpts={'cmap':cmap_type, 'norm':norm}, ax=ax,
+            tmp, grid=show_grid, pcolorOpts={'cmap':cmap_type, 'norm':norm}, ax=ax,
             gridOpts={"color": "white", "alpha": 0.5}
         )
         cb = plt.colorbar(out[0], orientation='horizontal', format="%.1f", fraction=0.06, ax=ax, ticks=ticks)
@@ -617,7 +617,6 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
-            clim=(vmin, vmax),
             pcolorOpts={"cmap": cmap, 'norm':norm},
             ax=ax1,
             gridOpts={"color": "white", "alpha": 0.5},
@@ -625,7 +624,6 @@ class DCRInversionApp(object):
         self.mesh.plot_image(
             rho2,
             grid=show_grid,
-            clim=(vmin, vmax),
             pcolorOpts={"cmap": cmap, 'norm':norm},
             ax=ax2,
             gridOpts={"color": "white", "alpha": 0.5},
@@ -701,7 +699,6 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             tmp,
             grid=show_grid,
-            clim=(vmin, vmax),
             pcolorOpts={"cmap": cmap},
             ax=ax,
             gridOpts={"color": "white", "alpha": 0.5},
@@ -822,7 +819,6 @@ class DCRInversionApp(object):
         out = self.mesh.plot_image(
             rho1,
             grid=show_grid,
-            clim=(vmin, vmax),
             pcolorOpts={"cmap": cmap, 'norm':norm},
             ax=ax,
             gridOpts={"color": "white", "alpha": 0.5},
