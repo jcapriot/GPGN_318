@@ -827,7 +827,7 @@ class DCRInversionApp(object):
         if reverse_color:
             cmap = "viridis_r"
         else:
-            cmap = "virids"
+            cmap = "viridis"
 
         if scale == "log":
             norm = LogNorm(vmin, vmax)
