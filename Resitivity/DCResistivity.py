@@ -697,7 +697,7 @@ class DCRInversionApp(object):
         mref_2 = np.log(1.0 / (self.rho_ref * self.factor))
 
         def compute_doi_index(m1, m2, mref_1, mref_2):
-            doi_index = (m1 - m2) / (mref_1 - mref_2)
+            doi_index = np.abs((m1 - m2) / (mref_1 - mref_2))
             return doi_index
 
         doi_index = compute_doi_index(m1, m2, mref_1, mref_2)
