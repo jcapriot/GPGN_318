@@ -825,9 +825,9 @@ class DCRInversionApp(object):
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
         if reverse_color:
-            cmap = "jet_r"
+            cmap = "viridis_r"
         else:
-            cmap = "jet"
+            cmap = "virids"
 
         if scale == "log":
             norm = LogNorm(vmin, vmax)
