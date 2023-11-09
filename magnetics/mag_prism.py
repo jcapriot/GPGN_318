@@ -173,7 +173,7 @@ class MagneticPrismInteract():
         strength = self._magnitude_slider.value
         sus = self._sus_slider.value
         b0 = IDTtoxyz(inc, dec, strength)
-        #b0 = np.r_[b0[1], b0[0], b0[2]]
+        b0 = np.r_[b0[0], b0[1], -b0[2]]
         M = b0 / mu_0 * sus
         
         self.prism.magnetization = M
@@ -184,13 +184,13 @@ class MagneticPrismInteract():
     def _update_image(self):
         B, ba = self._do_forward()
         if self._comp_toggle.value == 'East':
-            b = -B[..., 0]
+            b = B[..., 0]
             label = r"$B_{east}$ (nT)"
         elif self._comp_toggle.value == 'North':
-            b = -B[..., 1]
+            b = B[..., 1]
             label = r"$B_{north}$ (nT)"
         elif self._comp_toggle.value == 'Down':
-            b = B[..., 2]
+            b = -B[..., 2]
             label = r"$B_{down}$ (nT)"
         else:
             b = ba
