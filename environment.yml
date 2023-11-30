@@ -14,3 +14,4 @@ dependencies:
 - ipyleaflet
 - pyvista
 - trame
+- vtk>=9.2
