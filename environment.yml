@@ -12,3 +12,5 @@ dependencies:
 - ipywidgets
 - ipympl
 - ipyleaflet
+- pyvista
+- trame
