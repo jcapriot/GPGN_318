@@ -18,14 +18,8 @@ import re
 
 def setup_data(file_name):
     with open(file_name) as f:
-        dec = f.readline()[:-1].split(":")[-1].strip()
-        inc = f.readline()[:-1].split(":")[-1].strip()
-        dec = re.split('[°\'"]', dec)[:-1]
-        inc = re.split('[°\'"]', inc)[:-1]
-        dec = [float(v) for v in dec]
-        inc = [float(v) for v in inc]
-        dec = dec[0] + dec[1] / 60 + dec[2] / (60 * 60)
-        inc = inc[0] + inc[1] / 60 + inc[2] / (60 * 60)
+        dec = float(f.readline()[:-1].split(":")[-1].split()[0])
+        inc = float(f.readline()[:-1].split(":")[-1].split()[0])
         b0 = float(f.readline()[:-1].split(":")[-1].split()[0].strip())
 
         data_file = pd.read_csv(f)
