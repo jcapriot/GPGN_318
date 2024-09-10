@@ -1,17 +1,22 @@
 import numpy as np
-from pymatsolver import Pardiso, BicgJacobi
-from SimPEG import maps, data
-from SimPEG.electromagnetics.static import resistivity as DC
+from pymatsolver import BicgJacobi
+try:
+    from pymatsolver import Pardiso as DSolver
+except ImportError:
+    try:
+        from pymatsolver import Mumps as DSolver
+    except ImportError:
+        from pymatsolver import Solver as DSolver
+
+from simpeg import maps, data
+from simpeg.electromagnetics.static import resistivity as DC
 import pandas as pd
 
-from SimPEG import (data_misfit, regularization,
+from simpeg import (data_misfit, regularization,
     optimization, inverse_problem, inversion, directives, utils,
     Data
 )
 
-from SimPEG.electromagnetics.static.utils import (
-    genTopography, gen_DCIPsurvey
-)
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, Normalize
 import matplotlib
@@ -167,7 +172,7 @@ class DCRInversionApp(object):
 
     def get_problem(self):
         store_J = True
-        solver_type = Pardiso
+        solver_type = DSolver
         actmap = maps.InjectActiveCells(
             self.mesh, indActive=self.actind, valInactive=np.log(self.sigma_air),
         )
@@ -254,7 +259,7 @@ class DCRInversionApp(object):
             dmis.W = 1./self.uncertainty
             reg = regularization.WeightedLeastSquares(
                 mesh=self.mesh,
-                indActive=self.actind,
+                active_cells=self.actind,
                 alpha_s=alpha_s,
                 alpha_x=alpha_x,
                 alpha_y=alpha_z,

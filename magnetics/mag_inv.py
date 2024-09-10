@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import discretize
-from SimPEG.potential_fields import magnetics as mag
-from SimPEG import (
+from simpeg.potential_fields import magnetics as mag
+from simpeg import (
     maps,
     data,
     data_misfit,

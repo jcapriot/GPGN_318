@@ -204,7 +204,7 @@ class GravInteract():
         gz += dz
         
         self._line.set_data(self._obs[:, 0], gz)
-        self._tie.set_data(self._obs[tie_index, 0], gz[tie_index])
+        self._tie.set_data([self._obs[tie_index, 0]], [gz[tie_index]])
         
     def display(self):
         display(self._box)
