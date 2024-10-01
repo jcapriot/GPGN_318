@@ -8,6 +8,21 @@ import numpy as np
 class GravInteract():
     
     def __init__(self, obs, data, std=None, xmarks=None, zmarks=None):
+        """Create a widget to interactively model and fit gravity data
+
+        The coordinate system is x positive to the right, and z positive
+        down.
+
+        Parameters
+        ----------
+        obs : (n_data, 2) numpy.ndarray
+            The observation point locations.
+        data : (n_data, ) numpy.ndarray
+            The observed gravity values in mGal. (positive down).
+        std : (n_data, ) numpy.ndarray, optional
+            Standard deviations of the observed gravity values.
+        
+        """
 
         obs = np.asarray(obs)
         data = np.asarray(data)
@@ -213,6 +228,13 @@ class GravInteract():
         return self._box
     
     def get_polygons(self):
+        """Get a list of polygons in the current modeler widget
+
+        Returns
+        -------
+        polys : (n_poly, ) list of (n_node, 2) numpy.ndarray
+            The nodes of the polygons.
+        """
         dc = self._draw_control
         data = dc.data
         polys = []
@@ -224,6 +246,13 @@ class GravInteract():
         return polys
     
     def add_polygon(self, nodes):
+        """Add a polygon to the modeler.
+
+        Parameters
+        ----------
+        nodes : (n_nodes, 2) numpy.ndarray
+            The nodes of the polygons, listed in order (either CW or CCW).
+        """
         dc = self._draw_control
         
         state = dc.get_state()
