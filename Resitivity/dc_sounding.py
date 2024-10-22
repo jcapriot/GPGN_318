@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ipywidgets import HTML, VBox, Label, Widget, FloatSlider, HBox, IntSlider, Layout, ToggleButtons, Output, Button
 
-from SimPEG.electromagnetics.static import resistivity as dc
-from SimPEG import (
+from simpeg.electromagnetics.static import resistivity as dc
+from simpeg import (
     maps,
     data,
     data_misfit,
@@ -261,9 +261,9 @@ class DCSoundingInteract():
         return dpred
     
     def _update_model_plot(self):
-        self._line_model.set_data(self._model[:, 0], self._model[:, 1])
-        self._markers_model.set_data(self._model[:-1, 0], self._model[:-1, 1])
-        self._end_mark_model.set_data(self._model[-1, 0], self._model[-1, 1])
+        self._line_model.set_data(np.atleast_1d(self._model[:, 0]), np.atleast_1d(self._model[:, 1]))
+        self._markers_model.set_data(np.atleast_1d(self._model[:-1, 0]), np.atleast_1d(self._model[:-1, 1]))
+        self._end_mark_model.set_data(np.atleast_1d(self._model[-1, 0]), np.atleast_1d(self._model[-1, 1]))
         
     def _update_dpred_plot(self):
         dpred = self._dpred()
@@ -275,7 +275,7 @@ class DCSoundingInteract():
             if self._dtype_toggle.value == 'Apparent Resistivity':
                 g = self._sim.survey.set_geometric_factor().dobs
                 d_obs = d_obs/g
-            self._data_line.set_xdata(d_obs)
+            self._data_line.set_xdata(np.atleast_1d(d_obs))
             da_min = min(da_min, d_obs.min())
             da_max = max(da_max, d_obs.max())
 
