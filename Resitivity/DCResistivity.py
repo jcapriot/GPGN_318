@@ -233,8 +233,8 @@ class DCRInversionApp(object):
         beta0_ratio=1.,
         coolingFactor=5,
         coolingRate=2,
-        rho_upper=np.Inf,
-        rho_lower=-np.Inf,
+        rho_upper=np.inf,
+        rho_lower=-np.inf,
         # use_iterative=False,
         run=True,
     ):
