@@ -1,16 +1,11 @@
 import numpy as np
-from pymatsolver import BicgJacobi
-try:
-    from pymatsolver import Pardiso as DSolver
-except ImportError:
-    try:
-        from pymatsolver import Mumps as DSolver
-    except ImportError:
-        from pymatsolver import Solver as DSolver
 
 from simpeg import maps, data
 from simpeg.electromagnetics.static import resistivity as DC
 import pandas as pd
+from simpeg.utils.solver_utils import get_default_solver
+
+DSolver = get_default_solver()
 
 from simpeg import (data_misfit, regularization,
     optimization, inverse_problem, inversion, directives, utils,
