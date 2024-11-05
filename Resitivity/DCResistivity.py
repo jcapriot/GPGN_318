@@ -19,7 +19,7 @@ import warnings
 warnings.filterwarnings("ignore")
 matplotlib.rcParams['font.size'] = 14
 
-from ipywidgets import GridspecLayout, widgets
+from ipywidgets import GridspecLayout, widgets, fixed
 import os
 from scipy.interpolate import griddata
 from discretize import TensorMesh
@@ -235,7 +235,6 @@ class DCRInversionApp(object):
         coolingRate=2,
         rho_upper=np.inf,
         rho_lower=-np.inf,
-        # use_iterative=False,
         run=True,
     ):
         # self.use_iterative=use_iterative
@@ -1052,11 +1051,11 @@ class DCRInversionApp(object):
         maxIter = widgets.IntText(value=10, continuous_update=False)
         rho_0 = widgets.FloatText(
             value=rho_initial, continuous_update=False,
-            description="$\\rho_0$"
+            description=r"$\rho_0$"
         )
         rho_ref = widgets.FloatText(
             value=rho_initial, continuous_update=False,
-            description="$\\rho_{ref}$"
+            description=r"$\rho_{ref}$"
             )
         percentage = widgets.FloatText(value=self.percentage, continuous_update=False,
             description="noise percent")
@@ -1064,8 +1063,10 @@ class DCRInversionApp(object):
             description="noise floor")
         chifact = widgets.FloatText(value=1.0, continuous_update=False)
         beta0_ratio = widgets.FloatText(value=10., continuous_update=False)
+    
         coolingFactor = widgets.FloatSlider(
-            min=0.1, max=10, step=1, value=2, continuous_update=False
+           min=0.1, max=10, step=1, value=2, continuous_update=False,
+           description='cooling factor',
         )
         coolingRate = widgets.IntSlider(
             min=1, max=10, step=1, value=1, continuous_update=False,
@@ -1073,15 +1074,15 @@ class DCRInversionApp(object):
         )
         alpha_s = widgets.FloatText(
             value=1e-2, continuous_update=False,
-            description="$\\alpha_{s}$"
+            description=r"$\alpha_{s}$"
         )
         alpha_x = widgets.FloatText(
             value=1, continuous_update=False,
-            description="$\\alpha_{x}$"
+            description=r"$\alpha_{x}$"
         )
         alpha_z = widgets.FloatText(
             value=1, continuous_update=False,
-            description="$\\alpha_{z}$"
+            description=r"$\alpha_{z}$"
         )
         # use_iterative = widgets.Checkbox(
         #     value=False, continuous_update=False, description="use iterative solver"
@@ -1094,8 +1095,6 @@ class DCRInversionApp(object):
             maxIter=maxIter,
             rho_0=rho_0,
             rho_ref=rho_ref,
-            # percentage=percentage,
-            # floor=floor,
             chifact=chifact,
             beta0_ratio=beta0_ratio,
             coolingFactor=coolingFactor,
@@ -1103,7 +1102,8 @@ class DCRInversionApp(object):
             alpha_s=alpha_s,
             alpha_x=alpha_x,
             alpha_z=alpha_z,
-            # use_iterative=use_iterative
+            rho_upper=fixed(np.inf),
+            rho_lower=fixed(-np.inf),
         )
 
     def interact_plot_inversion_results(self):
