@@ -264,6 +264,7 @@ class DCRInversionApp(object):
             opt = optimization.ProjectedGNCG(
                 maxIter=maxIter, maxIterCG=maxIterCG, print_type='ubc'
             )
+            opt.factor = 1
             opt.remember('xc')
             invProb = inverse_problem.BaseInvProblem(dmis, reg, opt)
             beta = directives.BetaEstimate_ByEig(beta0_ratio=beta0_ratio)
