@@ -4,7 +4,7 @@ from ipywidgets import HTML, VBox, Label, Widget, FloatSlider, HBox, IntSlider, 
 
 from geoana.em.static import MagneticPrism
 from scipy.constants import mu_0
-from SimPEG.potential_fields.magnetics.analytics import IDTtoxyz
+from simpeg.potential_fields.magnetics.analytics import IDTtoxyz
 
 class MagneticPrismInteract():
 
