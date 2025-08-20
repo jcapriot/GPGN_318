@@ -2,19 +2,20 @@ name: gpgn-318
 channels:
 - conda-forge
 dependencies:
-- python=3.11
+- python=3.12
 - discretize
 - geoana
-- SimPEG=0.23
+- SimPEG=0.24
 - sympy
 - pandas
 - matplotlib
 - jupyterlab
 - ipywidgets
 - ipympl
-- ipyleaflet
-- pyvista
-- trame
-- trame-vtk
-- trame-vuetify
-- vtk>=9.2
+- ipyevents
+- ipycanvas
+- plotly<6.0
+- pyvista=0.46.1
+- trame=3.12
+- trame-vtk=2.9.1
+- trame-vuetify=3.0.2
