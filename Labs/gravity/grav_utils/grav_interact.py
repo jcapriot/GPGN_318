@@ -73,7 +73,9 @@ class GravInteract(widgets.VBox):
         self.fig = go.FigureWidget(
             data=plotly_plots,
             layout=dict(
-                annotations=annotations, showlegend=False, margin=margin, modebar=modebar, autosize=True, width=None, height=200
+                annotations=annotations, showlegend=False, margin=margin, modebar=modebar, autosize=True, width=None, height=200,
+                xaxis_title="Profile Distance (m)",
+                yaxis_title="Gz (mGal)",
             ),
         )
 
@@ -122,4 +124,7 @@ class GravInteract(widgets.VBox):
     
     def set_polygons(self, polys):
         self.editor.add_polygons(polys)
+
+    def get_data(self):
+        return self.gz.copy()
 
