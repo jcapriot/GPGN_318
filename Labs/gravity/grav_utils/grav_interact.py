@@ -46,7 +46,7 @@ class GravInteract(widgets.VBox):
             )
             self.tie_position.observe(self._update_fig)
             self.data = np.asarray(self.data)[arg_sort]
-            scatter_args = dict(x=x, y=data, mode="markers")
+            scatter_args = dict(x=x, y=self.data, mode="markers")
             if self.std is not None:
                 self.std = np.asarray(self.std)[arg_sort]
                 scatter_args["error_y"] = dict(type="data", array=std, visible=True)
