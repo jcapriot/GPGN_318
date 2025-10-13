@@ -920,7 +920,8 @@ class DCRInversionApp(object):
                 )
             else:
                 raise NotImplementedError()
-        except:
+        except Exception as err:
+            print(err)
             print (">> an inversion for doi calculation is needed to be run")
 
     def run_doi(self, factor, doi_iter, run=False):
