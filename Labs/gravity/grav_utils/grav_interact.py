@@ -7,7 +7,6 @@ from gpgn_utilities.poly_interact import PolygonEditor
 import plotly.graph_objects as go
 import numpy as np
 import ipywidgets as widgets
-from ipyevents import Event
 
 from Labs.gravity.grav_utils.gpoly import gpoly
 
@@ -89,7 +88,6 @@ class GravInteract(widgets.VBox):
         pieces.append(self.editor)
 
         super().__init__(pieces, layout=widgets.Layout(justify_content="center", max_width="70%"))
-
 
     @property
     def n_data(self):

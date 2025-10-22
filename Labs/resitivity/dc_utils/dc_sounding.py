@@ -1,6 +1,12 @@
+import sys, pathlib
+current_file_path = pathlib.Path(__file__).parent
+sys.path.append(str(current_file_path.parent.parent.parent))
+
+from gpgn_utilities.interact_1d import ConductivityModelCanvas
+import plotly.graph_objects as go
+
 import numpy as np
-import matplotlib.pyplot as plt
-from ipywidgets import HTML, VBox, Label, Widget, FloatSlider, HBox, IntSlider, Layout, ToggleButtons, Output, Button
+from ipywidgets import VBox, HBox, Layout, Output, Button, SelectionSlider, Box
 
 from simpeg.electromagnetics.static import resistivity as dc
 from simpeg import (
@@ -12,16 +18,14 @@ from simpeg import (
     inverse_problem,
     inversion,
     directives,
-    utils,
 )
 from simpeg.electromagnetics.static import utils as static_utils
 import discretize
 
-class DCSoundingInteract():
+class DCSoundingInteract(VBox):
     
-    def __init__(self, A, B, M, N, observed_voltage=None, standard_deviation=None, rho_0=1):
+    def __init__(self, A, B, M, N, observed_voltage=None, standard_deviation=None, sigma_0=None, n_layer=1):
 
-        n_layer = 1
         def check_dims(locs):
             locs = np.atleast_1d(locs)
 
@@ -36,20 +40,28 @@ class DCSoundingInteract():
         M = check_dims(M)
         N = check_dims(N)
 
-        rho = np.repeat(rho_0, n_layer)
-        thick = 10**(np.repeat(2, n_layer-1))
-
-        self._model = self._rho_thick_to_model(rho, thick)
+        self._output = Output(layout={'border': '1px solid black'})
 
         # volt/apparent resistivity display
-        self._dtype_toggle = ToggleButtons(
-            options=['Apparent Resistivity', 'Volts'],
-            description='Data View',
+        self._dtype_toggle = SelectionSlider(
+            options=['Volts', 'Apparent Conductivity', 'Apparent Resistivity'],
+            description='x-axis',
+            orientation='horizontal',
             disabled=False,
-            button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-            tooltips=['Display the data in voltage', 'Display the data as apparent resistivity',],
+            readout=False,
         )
+
         
+        def dtype_toggle_call(change):
+            dtype = self._dtype_toggle.value
+            if dtype == 'Apparent Conductivity':
+                self.fig.update_layout(xaxis_title="Apparent Conductivity (S/m)")
+            elif dtype == 'Apparent Resistivity':
+                self.fig.update_layout(xaxis_title="Apparent Resistivity (Ohm m)")
+            else:
+                self.fig.update_layout(xaxis_title='Voltage (V)')
+            self._update_fig()
+
         # make the simpeg survey
         
         src_list = []
@@ -57,7 +69,7 @@ class DCSoundingInteract():
             if n is None:
                 rx = dc.receivers.Pole(m, data_type='volt')
             else:
-                rx = dc.receivers.Dipole(m, n)
+                rx = dc.receivers.Dipole(m, n, data_type='volt')
             if b is None:
                 src = dc.sources.Pole(rx, a)
             else:
@@ -74,145 +86,79 @@ class DCSoundingInteract():
             self._dobs = None
         
         self._sim = dc.Simulation1DLayers(survey=survey)
-        
-        # Create a figure and axis
-        with plt.ioff():
-            fig, [ax_model, ax_data] = plt.subplots(1, 2)
-        self._fig = fig
-        
-        toolbar = plt.get_current_fig_manager().toolbar
-        ax_model.set_xscale('log')
-        ax_model.set_yscale('log')
-        ax_model.invert_yaxis()
 
-        ax_model.set_ylim([1.05 * self._model[-1, 1], 0.5 * self._model[1, 1]])
-        ax_model.grid(True)
-
-        ax_model.set_xlabel(r'resistivity ($\Omega$ m)')
-        ax_model.set_ylabel(r'Depth (m)')
-
-        ax_data.set_yscale('log')
-        ax_data.set_xscale('log')
-        ax_data.yaxis.set_label_position("right")
-        ax_data.yaxis.tick_right()
-        ax_data.invert_yaxis()
-        ax_data.set_ylabel(r'Array halfwidth (m)')
-        ax_data.grid(True)
-        self._ax_data = ax_data
-        self._ax_model = ax_model
-        
-        # Initialize the line with some initial data
-        self._line_model, = ax_model.plot(self._model[:, 0], self._model[:, 1], color='C0')
-        self._markers_model, = ax_model.plot(self._model[:-1, 0], self._model[:-1, 1], color='C0', marker='o', linewidth=0)
-        self._end_mark_model, = ax_model.plot(self._model[[-1], 0], self._model[[-1], 1], color='C0', marker='v', linewidth=0)
-
-        ab_half = np.linalg.norm(survey.locations_a - survey.locations_b, axis=-1) * 0.5
-
-        dpred = self._dpred()
-        self._line_data, = ax_data.plot(dpred, ab_half, marker='.', linewidth=0)
-        da_min, da_max = [0.95 * dpred.min(), 1.05 * dpred.max()]
-        ax_data.set_xlabel(r'$\rho_a$ ($\Omega m$)')
-
-        if observed_voltage is not None:
-            g = static_utils.geometric_factor(survey)
-            rho_obs = observed_voltage / g
-            self._data_line, = ax_data.plot(rho_obs, ab_half, marker='x', color='C1', linewidth=0)
-            da_min = min(da_min, 0.95*rho_obs.min())
-            da_max = max(da_max, 1.05*rho_obs.max())
-        ax_data.set_xlim([da_min, da_max])
-
-        def toggle_obs(change):
-            if self._dtype_toggle.value == 'Apparent Resistivity':
-                ax_data.set_xlabel(r'$\rho_a$ ($\Omega m$)')
+        if sigma_0 is None:
+            if observed_voltage is not None:
+                sigma_aps = static_utils.geometric_factor(survey)/observed_voltage
+                sigma_0 = np.median(sigma_aps)
             else:
-                ax_data.set_xlabel('Potential (Volts)')
-            self._update_dpred_plot()
+                sigma_0 = 1.0
+        sigma = np.repeat(sigma_0, n_layer)
+        thick = 10**(np.repeat(2, n_layer-1))
 
-        self._dtype_toggle.observe(toggle_obs)
-        
-        self.__dragging = False
-        self.__selection_point = None
-        self.__segment_ind = None
-        self.__segment_start = None
+        self.editor = ConductivityModelCanvas(
+            thick, sigma, width=1200, height=1800,
+            layout=Layout(justify_content="center", max_width="100%")
+        )
+        self.editor.monitor = self._output
+
+        self._calc_volts(*self.editor.get_model())
+
+        self._ab_half = np.linalg.norm(survey.locations_a - survey.locations_b, axis=-1) * 0.5
+
+        self.pre_plot = go.Scatter(
+            x=np.abs(self._dpred_volts),
+            y=self._ab_half,
+            mode="markers",
+            marker=dict(color=np.where(self._dpred_volts > 0, 'blue', 'red')),
+            name='Observed'
+        )
+        plotly_plots = [self.pre_plot]
+
+        annotations = []
+        if self._dobs is not None:
+            self.obs_plot = go.Scatter(
+                x=np.abs(self._dobs.dobs),
+                y=self._ab_half,
+                mode='markers',
+                marker=dict(color=np.where(self._dobs.dobs > 0, 'green', 'yellow'), symbol='hourglass'),
+                error_x=dict(type="data", array=self._dobs.standard_deviation, visible=True),
+                name='Predicted'
+            )
+            plotly_plots.append(self.obs_plot)
+            annotations.append(
+                dict(
+                    text=f"Misfit = {self.data_misfit:.3f}",
+                    ax = 1,
+                    ay = 1,
+                    x = 1,
+                    y = 1,
+                    showarrow = False,
+                    align = 'right',
+                    xanchor = 'right',
+                    yanchor = 'top',
+                    xref = 'paper',
+                    yref = 'paper',
+                )
+            )
+        margin = dict(b=0, l=0, r=0, t=20)
+        modebar = dict(remove=["lasso", "select"])
+        self.fig = go.FigureWidget(
+            data=plotly_plots,
+            layout=dict(
+                annotations=annotations, showlegend=(self._dobs is not None), margin=margin, modebar=modebar, autosize=True, width=None, height=500,
+                xaxis_title="Voltage (V)",
+                yaxis_title="AB / 2 (m)",
+                xaxis_type='log',
+                yaxis_type='log'
+            ),
+        )
+        self.fig.update_yaxes(autorange='reversed')
+
+        self.editor.on_model_update(self._update_data_plot)
         
         # setup function for clicking a line:
         # Define a function for handling button press events
-        def on_press(event):
-            if event.inaxes == ax_model and toolbar.mode != 'pan/zoom':
-                contains, attrd = self._line_model.contains(event)
-                if contains:
-                    selection_point = [event.xdata, event.ydata]
-                    close_inds = attrd['ind']
-                    if len(close_inds) == 0:
-                        close_inds = np.array([-2])
-                    closest = np.argmin(np.linalg.norm(selection_point - self._model[close_inds]))
-                    segment_ind = close_inds[closest]
-                    if event.key == 'shift':
-                        # need to split segment and trigger redraw of data
-                        nodes_before = self._model[:segment_ind+1]
-                        nodes_after = self._model[segment_ind+1:]
-
-                        if segment_ind % 2 == 0:
-                            # horizontal use event.xdata
-                            new_point = np.array([[nodes_before[-1, 0], selection_point[1]]])
-                        else:
-                            new_point = np.array([[selection_point[0], nodes_before[-1, 1]]])
-
-                        # find closest point on line to selection
-                        new_nodes = np.r_[nodes_before, new_point, new_point, nodes_after]
-                        self._model = new_nodes
-                        self._update_model_plot()
-                        self._update_dpred_plot()
-                    else:
-                        self.__selection_point = selection_point
-                        self.__segment_ind = segment_ind
-                        self.__segment_start = self._model[segment_ind:segment_ind+2].copy()
-                        self.__dragging = True
-
-        # Define a function for handling mouse motion events
-        def on_motion(event):
-            if self.__dragging and event.inaxes == ax_model and toolbar.mode != 'pan/zoom':
-                segment_ind = self.__segment_ind
-                selection_point = self.__selection_point
-                segment_start = self.__segment_start
-                x, y = event.xdata, event.ydata
-                # vertical line
-                if segment_ind % 2 == 0:
-                    dx = x - selection_point[0]
-                    dy = 0
-                # horizontal line
-                else:
-                    dx = 0
-                    dy = y - selection_point[1]
-                new_points = segment_start + [dx, dy]
-                # if horizontal line, check for bounds on heights
-                if segment_ind % 2 == 1:
-                    new_y = new_points[0, 1]
-                    # need to check if it is valid
-                    if segment_ind + 2 < self._model.shape[0]:
-                        next_y = self._model[segment_ind + 2, 1]
-                        new_y = min(new_y, next_y)
-                    new_y = max(new_y, self._model[segment_ind - 1, 1])
-                    new_points[:, 1] = new_y
-
-                # put some reasonable guardrails on interacting.
-                # new_points = np.maximum(1E-15, new_points)
-                # new_points = np.minimum(1E15, new_points)
-
-                self._model[segment_ind:segment_ind + 2] = new_points
-                self._update_model_plot()
-                self._update_dpred_plot()
-
-        # Define a function for handling button release events
-        def on_release(event):
-            self.__dragging = False
-
-        # Connect the event handlers
-        fig.canvas.mpl_connect('button_press_event', on_press)
-        fig.canvas.mpl_connect('motion_notify_event', on_motion)
-        fig.canvas.mpl_connect('button_release_event', on_release)
-
-        self._output = Output(layout={'border': '1px solid black'})
 
         self._invert_button = Button(
             description='Run an inversion',
@@ -222,68 +168,77 @@ class DCSoundingInteract():
             icon='square-left', # (FontAwesome names without the `fa-` prefix)
         )
 
-        def button_call(change):
+        def inv_button_call(change):
            self._run_inversion()
 
-        self._invert_button.on_click(button_call)
 
-        delete_button = Button(
-           description='Remove Last Layer',
-           disabled=False,
-           button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-           tooltip='remove the last layer of the model',
-           icon='x',  # (FontAwesome names without the `fa-` prefix)
+        self._invert_button.on_click(inv_button_call)
+        self._dtype_toggle.observe(dtype_toggle_call)
+
+        right_box = VBox([self.fig, self._dtype_toggle, self._invert_button], layout=Layout(height="900", max_width="45%"))
+        edit_box = Box([self.editor], layout=Layout(max_width="45%"))
+        top = HBox([edit_box, right_box],
+            layout=Layout(justify_content="center", max_height="900")
         )
-        def delete_call(change):
-            if len(self._model) > 2:
-                self._model = self._model[:-2]
-                self._update_model_plot()
-                self._update_dpred_plot()
+        super().__init__([top, self._output],
+            layout=Layout(justify_content="center")
+        )
 
-        delete_button.on_click(delete_call)
+    @property
+    def n_data(self):
+        return self._sim.survey.nD
 
-        button_box = HBox([self._invert_button, delete_button, self._dtype_toggle])
-
-        self._box = VBox([button_box, fig.canvas, self._output])
-
-    def _dpred(self, volts=False):
-        rho = self._model[::2, 0]
-        thick = np.diff(self._model[::2, 1])
+    def _calc_volts(self, thicknesses, conductivities):
         sim = self._sim
-        sim.rhoMap = None
-        sim.thicknessesMap = None
-        sim.rho = rho
-        sim.thicknesses = thick
+        sim.sigma = conductivities
+        sim.thicknesses = thicknesses
         dpred = sim.dpred(None)
-        # optionally do this?
-        if self._dtype_toggle.value == 'Apparent Resistivity' and not volts:
-            g = static_utils.geometric_factor(self._sim.survey)
-            dpred = dpred/g
-        return dpred
+        self._dpred_volts = dpred
     
-    def _update_model_plot(self):
-        self._line_model.set_data(np.atleast_1d(self._model[:, 0]), np.atleast_1d(self._model[:, 1]))
-        self._markers_model.set_data(np.atleast_1d(self._model[:-1, 0]), np.atleast_1d(self._model[:-1, 1]))
-        self._end_mark_model.set_data(np.atleast_1d(self._model[-1, 0]), np.atleast_1d(self._model[-1, 1]))
-        
-    def _update_dpred_plot(self):
-        dpred = self._dpred()
-        self._line_data.set_xdata(dpred)
-        da_min, da_max = [dpred.min(), dpred.max()]
+    @property
+    def data_misfit(self):
+        d_diff = self._dobs.dobs - self._dpred_volts
+        d_diff /= self._dobs.standard_deviation
+        return np.dot(d_diff, d_diff) / self.n_data
+    
+    def _update_data_plot(self, thicknesses, conductivities):
+        self._calc_volts(thicknesses, conductivities)
+        self._update_fig()
 
-        if self._dobs is not None:
-            d_obs = self._dobs.dobs
-            if self._dtype_toggle.value == 'Apparent Resistivity':
+    def _update_fig(self):
+        with self.fig.batch_update():  # more efficient batch updates
+            dpred = self._dpred_volts
+            if self._dobs is not None:
+                self.fig.layout.annotations[0].text = f"Misfit = {self.data_misfit:.3f}"
+            
+            if self._dtype_toggle.value != "Volts":
                 g = static_utils.geometric_factor(self._sim.survey)
-                d_obs = d_obs/g
-            self._data_line.set_xdata(np.atleast_1d(d_obs))
-            da_min = min(da_min, d_obs.min())
-            da_max = max(da_max, d_obs.max())
+                if self._dtype_toggle.value == "Apparent Resistivity":
+                    dpred = dpred / g
+                else:
+                    dpred = g / dpred
+        
+            da_min, da_max = [np.abs(dpred).min(), np.abs(dpred).max()]
+            if self._dobs is not None:
+                d_obs = self._dobs.dobs
+                rel_std =  np.abs(self._dobs.standard_deviation / d_obs)
+                if self._dtype_toggle.value != "Volts":
+                    g = static_utils.geometric_factor(self._sim.survey)
+                    if self._dtype_toggle.value == "Apparent Resistivity":
+                        d_obs = d_obs / g
+                    else:
+                        d_obs = g / d_obs
+                std = rel_std * d_obs
+                self.fig.data[1].x = np.abs(d_obs)
+                self.fig.data[1].error_x = dict(type="data", array=std, visible=True)
+                self.fig.data[1].marker = dict(color=np.where(d_obs > 0, 'green', 'yellow'), symbol='hourglass')
+                da_min = min(da_min, np.abs(d_obs).min())
+                da_max = max(da_max, np.abs(d_obs).max())
+    
+            self.fig.data[0].x = np.abs(dpred)
+            self.fig.data[0].marker = dict(color=np.where(dpred > 0, 'blue', 'red'))
 
-        self._ax_data.set_xlim([0.95*da_min, 1.05*da_max])
-
-    def display(self):
-        return self._box
+            self.fig.update_layout(xaxis_range=[np.log10(da_min)-0.25, np.log10(da_max)+0.25])
 
     def get_data(self):
         """Get the data associated with the current model.
@@ -293,7 +248,7 @@ class DCSoundingInteract():
         numpy.ndarray
             The forward modeled data in volts.
         """
-        return self._dpred(volts=True)
+        return self._dpred_volts
 
     def get_model(self):
         """
@@ -305,22 +260,9 @@ class DCSoundingInteract():
         thicknesses : (n_layer-1,) numpy.ndarray
             thicknesses of each layer, from the surface downward, in meters.
         """
-        rho = self._model[::2, 0]
-        thick = np.diff(self._model[::2, 1])
+        return self.editor.get_model()
 
-        return rho, thick
-
-    def _rho_thick_to_model(self, resistivity, thicknesses):
-        rhos = np.c_[resistivity, resistivity].reshape(-1)
-        if len(thicknesses) == 0:
-            depths = np.r_[0.0, 100.0]
-        else:
-            thicks = np.r_[thicknesses, thicknesses[-1]*10]
-            depths = np.cumsum(thicks)
-            depths = np.r_[0, np.c_[depths, depths].reshape(-1)[:-1]]
-        return np.c_[rhos, depths]
-
-    def set_model(self, resistivity, thicknesses=None):
+    def set_model(self, thicknesses, conductivities):
         """Sets the current model to have the given resistivity and thicknesses.
 
         Parameters
@@ -331,60 +273,46 @@ class DCSoundingInteract():
             thicknesses of each layer, from the surface downward, in meters.
             if n_layer == 1, this is optional.
         """
-        resistivity = np.atleast_1d(resistivity)
-        n_layer = resistivity.shape[0]
-
-        if n_layer == 1 and thicknesses is None:
-            thicknesses = np.array([])
-        thicknesses = np.atleast_1d(thicknesses)
-
-        if thicknesses.shape[0] != n_layer - 1:
-            raise ValueError(
-                'Incompatible number of resistivities and thicknesses. '
-                f'There were {thicknesses.shape[0]}, but I expected {n_layer - 1}.'
-            )
-
-        self._model = self._rho_thick_to_model(resistivity, thicknesses)
-        self._update_model_plot()
-
-        # update the axis limits
-        xlim = [0.95 * resistivity.min(), 1.05 * resistivity.max()]
-        ylim = [1.05 * self._model[-1, 1], 0.5 * self._model[1, 1]]
-
-        self._ax_model.set_xlim(xlim)
-        self._ax_model.set_ylim(ylim)
-        self._update_dpred_plot()
+        self.editor.set_model(thicknesses, conductivities)
+        self._calc_volts(thicknesses, conductivities)
+        self._update_fig()
 
     def _run_inversion(self):
         # get the current initial model
         if self._dobs is None:
             return
         dobs = self._dobs
-        rho = self._model[::2, 0]
-        thick = np.diff(self._model[::2, 1])
-        thick = np.maximum(thick, 0.1)
+        thick, sigma = self.get_model()
 
         # determine if the number of unknowns is less than the number of data points
-        underdetermined = (len(rho) + len(thick)) > dobs.nD
+        underdetermined = (len(sigma) + len(thick)) > dobs.nD
 
         # if underdetermined need to set up a regularization
         # set the mappings for the simulation
-        n_layers = len(rho)
+        n_layers = len(sigma)
         if n_layers > 1:
-            mapping = maps.Wires(('rho', n_layers), ('thick', n_layers-1))
-            self._sim.rho = None
+            mapping = maps.Wires(('sigma', n_layers), ('thick', n_layers-1))
+            self._sim.sigma = None
             self._sim.thicknesses = None
-            self._sim.rhoMap = maps.ExpMap() * mapping.rho
+            self._sim.sigmaMap = maps.ExpMap() * mapping.sigma
             self._sim.thicknessesMap = maps.ExpMap() * mapping.thick
 
-            init_model = np.log(np.r_[rho, thick])
+            init_model = np.log(np.r_[sigma, thick])
         else:
-            self._sim.rho = None
+            self._sim.sigma = None
             self._sim.thicknesses = []
-            self._sim.rhoMap = maps.ExpMap(nP=1)
+            self._sim.sigmaMap = maps.ExpMap(nP=1)
 
-            init_model = np.log(rho)
+            init_model = np.log(sigma)
         mesh = discretize.TensorMesh([len(init_model)])
+
+        lower_sigma = np.log(1E-8)
+        upper_sigma = np.log(1E8)
+        lower_thick = np.log(1E-3)
+        upper_thick = np.log(1E7)
+        upper = np.r_[np.full_like(sigma, upper_sigma), np.full_like(thick, upper_thick)]
+        lower = np.r_[np.full_like(sigma, lower_sigma), np.full_like(thick, lower_thick)]
+
 
         # Define the data misfit. Here the data misfit is the L2 norm of the weighted
         # residual between the observed data and the data predicted for a given model.
@@ -399,7 +327,7 @@ class DCSoundingInteract():
 
         # Define how the optimization problem is solved. Here we will use an inexact
         # Gauss-Newton approach that employs the conjugate gradient solver.
-        opt = optimization.InexactGaussNewton(maxIter=30, maxIterCG=20)
+        opt = optimization.ProjectedGNCG(maxIter=30, maxIterCG=20, lower=lower, upper=upper)
 
         # Define the inverse problem
         inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
@@ -442,14 +370,14 @@ class DCSoundingInteract():
             # Run the inversion
             recovered_model = inv.run(init_model)
         self._sim.model = recovered_model
-        rho = self._sim.rho
+        sigma = self._sim.sigma
         thick = self._sim.thicknesses
 
         self._sim.rhoMap = None
         self._sim.thicknessesMap = None
         self._sim.model = None
 
-        self.set_model(rho, thick)
+        self.set_model(thick, sigma)
 
 
 
