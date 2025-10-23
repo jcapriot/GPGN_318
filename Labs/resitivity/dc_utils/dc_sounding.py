@@ -93,8 +93,17 @@ class DCSoundingInteract(VBox):
                 sigma_0 = np.median(sigma_aps)
             else:
                 sigma_0 = 1.0
+                
+        self._ab_half = np.linalg.norm(survey.locations_a - survey.locations_b, axis=-1) * 0.5
         sigma = np.repeat(sigma_0, n_layer)
-        thick = 10**(np.repeat(2, n_layer-1))
+
+        if n_layer > 1:
+            min_depth_guess = np.log10(self._ab_half.min() * 10)
+            max_depth_guess = np.log10(self._ab_half.max() * 10)
+            depths = np.r_[0, np.logspace(min_depth_guess, max_depth_guess, n_layer - 1)]
+            thick = depths[1:] - depths[:-1]
+        else:
+            thick = []
 
         self.editor = ConductivityModelCanvas(
             thick, sigma, width=1200, height=1800,
@@ -183,6 +192,8 @@ class DCSoundingInteract(VBox):
         super().__init__([top, self._output],
             layout=Layout(justify_content="center")
         )
+
+        self._dtype_toggle.value = "Apparent Conductivity"
 
     @property
     def n_data(self):
