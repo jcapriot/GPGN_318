@@ -68,7 +68,9 @@ class DCRInversionApp(object):
             self._P = self.mesh.getInterpolationMat(self.mesh_core.gridCC, locType='CC')
         return self._P
 
-    def set_mesh(self, dx=None, dz=None, corezlength=None, show_core=None, xpad=None, zpad=None, mesh_type='TensorMesh'):
+    def set_mesh(self, dx=None, dz=None, corezlength=None, xpad=None, zpad=None):
+
+        mesh_type='TREE'
 
         sort_ind = np.argsort(self.IO.electrode_locations[:,0])
         if self.topo is None:
@@ -91,21 +93,6 @@ class DCRInversionApp(object):
             npad_z = npad_z + 1
             val = val + 1.3**npad_z
 
-        # if dx == 'None':
-        #     dx = None
-
-        # if dz == 'None':
-        #     dz = None
-
-        # if corezlength == 'None':
-        #     corezlength = None
-
-        # if npad_x == 'None':
-        #     npad_x = 10
-
-        # if npad_z == 'None':
-        #     npad_z = 10
-
         self.mesh, self.actind = self.IO.set_mesh(
             topo=topo,
             method='linear',
@@ -126,39 +113,17 @@ class DCRInversionApp(object):
                 grid_opts={'color':'white', 'alpha':0.5}
             )
 
-            ax.plot(self.IO.electrode_locations[:,0], self.IO.electrode_locations[:,1], 'k.')
-            # src = self.survey.srcList[i_src]
-            # rx = src.rxList[0]
-
-            # src_type = self.IO.survey_type .split('-')[0]
-            # rx_type = self.IO.survey_type .split('-')[1]
-
-            # if src_type == 'dipole':
-            #     ax.plot(src.loc[0][0], src.loc[0][1], 'ro')
-            #     ax.plot(src.loc[1][0], src.loc[1][1], 'bo')
-            # elif src_type == 'pole':
-            #     ax.plot(src.loc[0], src.loc[1], 'ro')
-            # if rx_type == 'dipole':
-            #     m, n = rx.locs[0], rx.locs[1]
-            #     ax.plot(m[:,0],m[:,1],'yo', ms=8)
-            #     ax.plot(n[:,0],n[:,1],'go', ms=4)
-            # elif rx_type == 'pole':
-            #     m = rx.locs
-            #     ax.plot(m[:,0],m[:,1],'yo', ms=8)
+            ax.plot(self.IO.electrode_locations[:,0], self.IO.electrode_locations[:,1], 'k.', alpha=0.25)
 
             ax.set_aspect(1)
             ax.set_xlabel("x (m")
             ax.set_ylabel("z (m")
-            if show_core:
-                ax.set_xlim(self.IO.xyzlim[0,:])
-                ax.set_ylim(self.IO.xyzlim[1,:])
-            else:
-                ax.set_ylim(self.mesh.nodes_y.min(), self.mesh.nodes_y.max() + 10)
+            ax.set_ylim(self.mesh.nodes_y.min(), self.mesh.nodes_y.max() + 10)
 
-    def load_obs(self, A, B, M, N, rho_a):
+    def load_obs(self, A, B, M, N, norm_v):
 
         self.survey = self.IO.from_abmn_locations_to_survey(
-            A, B, M, N, survey_type='dipole-dipole', data_dc=rho_a, data_dc_type="apparent_resistivity"
+            A, B, M, N, survey_type='dipole-dipole', data_dc=norm_v, data_dc_type="volt"
         )
         print (">> survey type: {}".format(self.IO.survey_type))
         print ("   # of data: {0}".format(self.survey.nD))
@@ -336,14 +301,10 @@ class DCRInversionApp(object):
             npad_z = npad_z + 1
             val = val + 1.3**npad_z
 
-        # i_src = widgets.IntSlider(value=0, min=0, max=self.survey.nSrc-1, step=1)
-        show_core = widgets.Checkbox(
-                value=True, description="show core region only", disabled=False
-        )
-
-        mesh_type = widgets.ToggleButtons(
-            value='TensorMesh', options=['TensorMesh', 'TREE']
-        )
+        # # i_src = widgets.IntSlider(value=0, min=0, max=self.survey.nSrc-1, step=1)
+        # show_core = widgets.Checkbox(
+        #         value=True, description="show core region only", disabled=False
+        # )
 
         print(">> suggested dx: {} m".format(self.IO.dx))
         print(">> suggested dz: {} m".format(self.IO.dz))
@@ -356,10 +317,8 @@ class DCRInversionApp(object):
                 dx=dx,
                 dz=dz,
                 corezlength=corezlength,
-                show_core=show_core,
                 xpad=xpad,
                 zpad=zpad,
-                mesh_type=mesh_type,
                 # i_src=i_src
         )
 
