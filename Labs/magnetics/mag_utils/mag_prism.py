@@ -6,7 +6,7 @@ from geoana.em.static import MagneticPrism
 from scipy.constants import mu_0
 from simpeg.potential_fields.magnetics.analytics import IDTtoxyz
 
-class MagneticPrismInteract():
+class MagneticPrismInteract(HBox):
 
     def __init__(self, grid_east=None, grid_north=None, grid_height=None, prism=None):
 
@@ -157,12 +157,9 @@ class MagneticPrismInteract():
 
         vbox = VBox([self._hemi_toggle, slider_box])
         box2 = HBox([vbox, self._comp_toggle])
-
-        box = HBox([box2, fig.canvas])
-
         #big_box = VBox([box, fig2.canvas])
-
-        self._box = box
+        
+        super().__init__([box2, fig.canvas])
 
     def _do_forward(self):
         
@@ -201,6 +198,3 @@ class MagneticPrismInteract():
             'clim':[b.min(), b.max()],
         })
         self._cb_image.set_label(label)
-
-    def display(self):
-        return self._box

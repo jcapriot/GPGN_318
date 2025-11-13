@@ -13,6 +13,21 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from scipy.constants import mu_0
 
+
+def _is_cw(points):
+    points = np.asarray(points)
+    if points.shape[1] != 2:
+        raise ValueError("points must be an Nx2 array")
+
+    x = points[:, 0]
+    y = points[:, 1]
+    x_next = np.roll(x, -1)
+    y_next = np.roll(y, -1)
+
+    area2 = np.sum((x_next - x) * (y_next + y))
+
+    return area2 > 0
+
 def mpoly(obs, nodes, magnetization, proj_dir=None):
     """Calculate the magnetic flux density of an infinite 2D polygonal prism.
 
@@ -47,24 +62,14 @@ def mpoly(obs, nodes, magnetization, proj_dir=None):
     -----------
     1. Blakely, R. J. (1996). Potential theory in gravity and magnetic applications.
        Cambridge University Press.
-
-    Example:
-    --------
-    >>> obs = np.array([[1.0, 2.0], [3.0, 4.0]])
-    >>> nodes = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-    >>> density = 2.5  # grams per cubic centimeter (g/cm³)
-    >>> grav = gpoly(obs, nodes, density)
     """
     #Blakely, 1996
-    gamma = 6.672E-03 # mGal
     obs = np.asarray(obs)
     nodes = np.asarray(nodes)
     
     # append a value to obs to do a cursory test for CW vs CCW
     # basically add a point outside and at a lower z-value than the body.
     # This point is above the center of the object.
-    
-    obs = np.r_[obs, [[np.median(nodes[:, 0]), np.min(nodes[:, 1]) - 100]]]
     
     numobs = len(obs)
     numnodes = len(nodes)
@@ -80,15 +85,7 @@ def mpoly(obs, nodes, magnetization, proj_dir=None):
         bz = gzx_gzz.dot(magnetization)
         b += np.c_[bx, bz]
 
-    if magnetization[1] != 0:
-        # the field above the polygon should have the same direction z component.
-        if np.sign(b[-1, 1]) != np.sign(magnetization[1]):
-            b *= -1
-    else:
-        # the x component should reverse outside the body directly above it.
-        if -np.sign(b[-1, 0]) != np.sign(magnetization[0]):
-            b *= -1
-    b = b[:-1]
+    if _is_cw(nodes): b *= -1
     b *= mu_0 / (4 * np.pi)
     if proj_dir is None:
         proj_dir = magnetization
@@ -271,26 +268,3 @@ def plot_model(data, obs_locs, *polygons, show_locations=True, loc_size=0.2):
     ax_model.set_ymargin(0.1)
     ax_model.autoscale()
     return ax_data, ax_model
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    xmin = 0.
-    xmax = 10.
-    nx = 201
-
-    obs = np.zeros((nx,2))
-    obs[:,0] = np.linspace(xmin,xmax,nx)
-
-    nodes = np.zeros((4,2))
-    nodes[0] = [2.,1.5]
-    nodes[1] = [3.,1.5]
-    nodes[2] = [3.,2.5]
-    nodes[3] = [2.,2.5]
-
-    density = 1
-
-    grav = gpoly(obs,nodes,density)
-
-    plt.plot(obs[:,0],grav)
-    plt.show()
