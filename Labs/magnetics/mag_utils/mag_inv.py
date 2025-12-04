@@ -90,7 +90,7 @@ def get_simulation(mesh, survey, n_processes=4):
 def run_inversion(
         data,
         simulation,
-        alpha_s=None,
+        alpha_s=1.0,
         length_scale_x=None,
         length_scale_y=None,
         length_scale_z=None,
@@ -105,7 +105,14 @@ def run_inversion(
     mesh = simulation.mesh
     if reference_model is None:
         reference_model = np.zeros(mesh.n_cells)
-    reg = regularization.WeightedLeastSquares(mesh, reference_model=np.zeros(mesh.n_cells))
+    reg = regularization.WeightedLeastSquares(
+        mesh,
+        alpha_s=alpha_s,
+        length_scale_x=length_scale_x,
+        length_scale_y=length_scale_y,
+        length_scale_z=length_scale_z,
+        reference_model=reference_model,
+    )
 
     # Define how the optimization problem is solved. Here we will use a projected
     # Gauss-Newton approach that employs the conjugate gradient solver.
